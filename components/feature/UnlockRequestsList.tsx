@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
-import Button from '../ui 2/Button';
+import Button from '../ui/Button';
 import { approveUnlockRequest, denyUnlockRequest, getLock, subscribeToUnlockRequests } from '../../lib/locks/service';
 import { Lock, UnlockRequest } from '../../lib/locks/types';
 

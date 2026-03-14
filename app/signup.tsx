@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Button from '../components/ui 2/Button';
+import Button from '../components/ui/Button';
 import { signUp } from '../lib/firebase/auth';
 import { useDeepLink, PENDING_INVITE_KEY } from '../lib/locks/DeepLinkProvider';
 

@@ -4,7 +4,7 @@ import { Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, 
 import { Swipeable } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import UnlockRequestsList from '../../components/feature/UnlockRequestsList';
-import Button from '../../components/ui 2/Button';
+import Button from '../../components/ui/Button';
 import { useAuth } from '../../lib/firebase/AuthContext';
 import { useDeepLink } from '../../lib/locks/DeepLinkProvider';
 import { acceptLock, cancelLock, deleteLock, listLocksForCreator, listLocksForHolder } from '../../lib/locks/service';

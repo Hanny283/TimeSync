@@ -2,7 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Button from '../../components/ui 2/Button';
+import Button from '../../components/ui/Button';
 import { useAuth } from '../../lib/firebase/AuthContext';
 import { createUnlockRequest, getLock, getPendingUnlockRequestForLock } from '../../lib/locks/service';
 import { Lock, UnlockRequest } from '../../lib/locks/types';

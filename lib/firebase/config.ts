@@ -3,18 +3,18 @@ import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getFirestore } from 'firebase/firestore';
 
-// Your web app's Firebase configuration
+// Firebase config is loaded from environment variables.
+// Copy .env.example to .env and fill in values from the Firebase console.
 // NOTE: The Firebase project is named "lock-it-a3dee" — this is an external resource
 // (live Firestore database + Auth project). Do NOT rename these values to "timesync".
-// Renaming would require migrating the live Firebase project, which is out of scope.
 const firebaseConfig = {
-  apiKey: "AIzaSyCnDuzZGLZCEbVrEAlLRhQmJBMXdMLySHs",
-  authDomain: "lock-it-a3dee.firebaseapp.com",
-  projectId: "lock-it-a3dee",
-  storageBucket: "lock-it-a3dee.firebasestorage.app",
-  messagingSenderId: "634357056435",
-  appId: "1:634357056435:web:6135c347f26b601f4f01c6",
-  measurementId: "G-QNWQCKYTWQ"
+  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
 // Initialize Firebase
