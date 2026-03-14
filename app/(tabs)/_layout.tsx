@@ -6,8 +6,7 @@ import { Platform } from 'react-native';
 import { Colors } from '../../constants/theme';
 import { useAuth } from '../../lib/firebase/AuthContext';
 import { db } from '../../lib/firebase/config';
-import { blockLock, startMonitoringForCreator } from '../../lib/locks/service';
-import { subscribeToUnlockRequests } from '../../lib/locks/service';
+import { blockLock, listLocksForCreator, startMonitoringForCreator, subscribeToUnlockRequests } from '../../lib/locks/service';
 import { registerForPushNotifications } from '../../lib/notifications';
 import { onDeviceActivityMonitorEvent } from '../../lib/screentime';
 
@@ -68,7 +67,6 @@ export default function TabsLayout() {
         }
       } else {
         try {
-          const { listLocksForCreator } = await import('../../lib/locks/service');
           const locks = await listLocksForCreator(user.uid);
           const activeLocks = locks.filter(l => l.status === 'active' && !l.isBlocked);
           for (const lock of activeLocks) {

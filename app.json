@@ -65,6 +65,51 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "bundleIdentifier": "com.hanny283.timesync.ShieldConfiguration",
+                  "targetName": "ShieldConfiguration",
+                  "entitlements": {
+                    "com.apple.developer.family-controls": true,
+                    "com.apple.security.application-groups": [
+                      "group.com.hanny283.timesync"
+                    ]
+                  }
+                },
+                {
+                  "bundleIdentifier": "com.hanny283.timesync.ShieldAction",
+                  "targetName": "ShieldAction",
+                  "entitlements": {
+                    "com.apple.developer.family-controls": true,
+                    "com.apple.security.application-groups": [
+                      "group.com.hanny283.timesync"
+                    ]
+                  }
+                },
+                {
+                  "bundleIdentifier": "com.hanny283.timesync.ActivityMonitorExtension",
+                  "targetName": "ActivityMonitorExtension",
+                  "entitlements": {
+                    "com.apple.developer.family-controls": true,
+                    "com.apple.security.application-groups": [
+                      "group.com.hanny283.timesync"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "projectId": "2d3d798f-266b-4b56-ac73-59cb13e7d681"
+      }
+    },
+    "owner": "gabrielcastillo"
   }
 }

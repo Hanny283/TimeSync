@@ -117,14 +117,12 @@ export async function clearAllRestrictions(): Promise<void> {
   try {
     if (__DEV__) console.log('🚨 CLEARING ALL SCREEN TIME RESTRICTIONS...');
 
-    const { stopMonitoring, resetBlocks } = await import('react-native-device-activity');
-
     // Stop all monitoring activities (calling with no args stops all)
-    stopMonitoring();
+    ReactNativeDeviceActivity.stopMonitoring();
     if (__DEV__) console.log('✅ All monitoring stopped');
 
     // Clear all blocks and shields
-    resetBlocks();
+    ReactNativeDeviceActivity.resetBlocks();
     if (__DEV__) console.log('✅ All blocks and shields cleared');
 
     if (__DEV__) console.log('✅ All restrictions cleared successfully!');
