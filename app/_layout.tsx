@@ -1,8 +1,29 @@
-import { Stack } from "expo-router";
+import { Stack, useRouter, useSegments } from "expo-router";
+import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import ErrorBoundary from "../components/ErrorBoundary";
-import { AuthProvider } from "../lib/firebase/AuthContext";
+import { AuthProvider, useAuth } from "../lib/firebase/AuthContext";
 import { DeepLinkProvider } from "../lib/locks/DeepLinkProvider";
+
+function AuthGate() {
+  const { user, loading } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (loading) return;
+
+    const inAuthGroup = segments[0] === "(tabs)";
+
+    if (!user && inAuthGroup) {
+      router.replace("/signin");
+    } else if (user && !inAuthGroup && segments[0] !== "lock" && segments[0] !== "request-unlock" && segments[0] !== "select_apps") {
+      router.replace("/(tabs)");
+    }
+  }, [user, loading, segments]);
+
+  return <Stack screenOptions={{ headerShown: false }} />;
+}
 
 export default function RootLayout() {
   return (
@@ -10,7 +31,7 @@ export default function RootLayout() {
     <ErrorBoundary>
     <AuthProvider>
       <DeepLinkProvider>
-        <Stack screenOptions={{ headerShown: false }} />
+        <AuthGate />
       </DeepLinkProvider>
     </AuthProvider>
     </ErrorBoundary>
