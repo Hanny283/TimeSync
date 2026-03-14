@@ -1,3 +1,5 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -8,11 +10,11 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import Button from '../components/ui/Button';
+import { Colors } from '../constants/theme';
 import { signIn } from '../lib/firebase/auth';
 import { useDeepLink, PENDING_INVITE_KEY } from '../lib/locks/DeepLinkProvider';
 
@@ -23,7 +25,6 @@ export default function SignInScreen() {
   const { hasPendingInvite } = useDeepLink();
   const [hasPendingInviteState, setHasPendingInviteState] = useState(false);
 
-  // Check for pending invite on mount (fallback in case context hasn't updated yet)
   useEffect(() => {
     const checkPendingInvite = async () => {
       try {
@@ -36,7 +37,6 @@ export default function SignInScreen() {
     checkPendingInvite();
   }, []);
 
-  // Use either context or local state
   const hasPending = hasPendingInvite || hasPendingInviteState;
 
   const handleSignIn = async () => {
@@ -48,12 +48,9 @@ export default function SignInScreen() {
     setLoading(true);
     try {
       await signIn(email, password);
-      // Check if there's a pending invite - if so, go to Your locks page
-      // The DeepLinkProvider will automatically load the pending lock after login
-      // Double-check AsyncStorage as fallback
       const pendingInvite = await AsyncStorage.getItem(PENDING_INVITE_KEY);
       const hasInvite = hasPending || !!pendingInvite;
-      
+
       if (hasInvite) {
         router.replace('/(tabs)/your_locks');
       } else {
@@ -68,62 +65,57 @@ export default function SignInScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={styles.content}>
-        <Text style={styles.title}>Sign In</Text>
-        
-        {hasPending && (
-          <View style={styles.pendingInviteBanner}>
-            <Text style={styles.pendingInviteText}>
-              🔒 You have a pending lock invite! Sign in to accept it.
-            </Text>
+          <View style={styles.logoSection}>
+            <Ionicons name="lock-closed" size={48} color={Colors.blue} />
+            <Text style={styles.logoLabel}>BUDDYBUMP</Text>
           </View>
-        )}
-        
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          autoCapitalize="none"
-        />
-        
-        <Button
-          title={loading ? "Signing In..." : "Sign In"}
-          onPress={handleSignIn}
-          disabled={loading}
-        />
-        
-        <TouchableOpacity 
-          style={styles.linkContainer}
-          onPress={() => router.push('/signup')}
-        >
-          <Text style={styles.linkText}>
-            Don't have an account? Sign Up
-          </Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={styles.linkContainer}
-          onPress={() => router.back()}
-        >
-          <Text style={styles.linkText}>Go Back</Text>
-        </TouchableOpacity>
-      </View>
+
+          <Text style={styles.title}>Sign In</Text>
+
+          {hasPending && (
+            <View style={styles.pendingInviteBanner}>
+              <Text style={styles.pendingInviteText}>
+                You have a pending lock invite! Sign in to accept it.
+              </Text>
+            </View>
+          )}
+
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            placeholderTextColor={Colors.textMuted}
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            placeholderTextColor={Colors.textMuted}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            autoCapitalize="none"
+          />
+
+          <Button
+            title={loading ? 'Signing In...' : 'Sign In'}
+            onPress={handleSignIn}
+            disabled={loading}
+          />
+
+          <TouchableOpacity style={styles.linkContainer} onPress={() => router.push('/signup')}>
+            <Text style={styles.linkText}>Don't have an account? Sign Up</Text>
+          </TouchableOpacity>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -132,7 +124,7 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: Colors.bg,
   },
   container: {
     flex: 1,
@@ -142,43 +134,54 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 20,
   },
+  logoSection: {
+    alignItems: 'center',
+    marginBottom: 28,
+  },
+  logoLabel: {
+    fontSize: 14,
+    color: Colors.textMuted,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    marginTop: 10,
+  },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 30,
-    color: '#333',
+    color: Colors.textPrimary,
   },
   input: {
-    backgroundColor: 'white',
+    backgroundColor: Colors.input,
     paddingHorizontal: 15,
     paddingVertical: 12,
     borderRadius: 8,
     marginBottom: 15,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: Colors.border,
+    color: Colors.textPrimary,
   },
   linkContainer: {
     marginTop: 15,
     alignItems: 'center',
   },
   linkText: {
-    color: '#007AFF',
+    color: Colors.blue,
     fontSize: 16,
   },
   pendingInviteBanner: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: Colors.warningBg,
     padding: 12,
     borderRadius: 8,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#2196F3',
+    borderColor: Colors.orange,
   },
   pendingInviteText: {
-    color: '#1976D2',
+    color: Colors.orange,
     fontSize: 14,
     textAlign: 'center',
   },
 });
-

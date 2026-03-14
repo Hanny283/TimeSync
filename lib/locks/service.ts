@@ -1,4 +1,4 @@
-import { addDoc, collection, doc, getDoc, getDocs, onSnapshot, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, getDocs, onSnapshot, query, updateDoc, where } from 'firebase/firestore';
 import { Linking, Platform } from 'react-native';
 import {
   startMonitoring,
@@ -13,6 +13,7 @@ import {
 } from 'react-native-device-activity';
 import { db } from '../firebase/config';
 import { getFamilyActivitySelection } from '../screentime';
+import { sendPushNotification } from '../notifications';
 import { CreateLockInput, InviteLockInput, Lock, UnlockRequest } from './types';
 import { formatUserName } from './utils';
 
@@ -47,8 +48,6 @@ export async function createLockDraft(input: CreateLockInput): Promise<Lock> {
     inviteUrl,
     createdAt: nowMs(),
     updatedAt: nowMs(),
-    createdAtServer: serverTimestamp(),
-    updatedAtServer: serverTimestamp(),
   };
   const ref = await addDoc(collection(db, LOCKS_COLLECTION), data);
   return { id: ref.id, ...data } as unknown as Lock;
@@ -72,7 +71,6 @@ export async function acceptLock(lockId: string, recipientUserId: string): Promi
     holderUserId: recipientUserId,
     status: 'active',
     updatedAt: nowMs(),
-    updatedAtServer: serverTimestamp(),
   });
 }
 
@@ -192,7 +190,6 @@ export async function blockLock(lockId: string): Promise<void> {
         isBlocked: true,
         blockedAt: nowMs(),
         updatedAt: nowMs(),
-        updatedAtServer: serverTimestamp(),
       });
     } catch (firestoreError) {
       console.warn('⚠️ Could not update Firestore (permissions?), but apps are still blocked:', firestoreError);
@@ -222,7 +219,6 @@ export async function unblockLock(lockId: string): Promise<void> {
         isBlocked: false,
         blockedAt: null,
         updatedAt: nowMs(),
-        updatedAtServer: serverTimestamp(),
       });
     } catch (firestoreError) {
       console.warn('⚠️ Could not update Firestore (permissions?), but apps are unblocked:', firestoreError);
@@ -269,29 +265,6 @@ export async function listLocksForHolder(userId: string): Promise<Lock[]> {
     .filter(lock => lock.status !== 'deleted');
 }
 
-/**
- * Returns pending locks that were sent to this user via a deep-link invite.
- *
- * SECURITY NOTE: Because invites are link-based (no upfront recipient), there is
- * no `recipientUserId` field to query on. This function therefore fetches ALL
- * pending locks and filters client-side. Firestore rules must ensure that only
- * the creator and holder can read a lock document — otherwise any authenticated
- * user could enumerate pending invites.
- *
- * Prefer the deep-link / `getLockByInviteId` flow for invite acceptance, which
- * requires the recipient to possess the unpredictable invite token.
- */
-export async function listPendingLocksForUser(userId: string): Promise<Lock[]> {
-  const q = query(
-    collection(db, LOCKS_COLLECTION),
-    where('status', '==', 'pending')
-  );
-  const snaps = await getDocs(q);
-  return snaps.docs
-    .map(d => ({ id: d.id, ...(d.data() as Lock) }))
-    .filter(lock => lock.creatorUserId !== userId);
-}
-
 export async function cancelLock(lockId: string): Promise<void> {
   const ref = doc(db, LOCKS_COLLECTION, lockId);
   const snap = await getDoc(ref);
@@ -302,7 +275,6 @@ export async function cancelLock(lockId: string): Promise<void> {
   await updateDoc(ref, {
     status: 'cancelled',
     updatedAt: nowMs(),
-    updatedAtServer: serverTimestamp(),
   });
 
   if (Platform.OS === 'ios') {
@@ -356,11 +328,9 @@ export async function deleteLock(lockId: string, userId: string): Promise<void> 
       cancelledByHolder: true,
       cancelledAt: nowMs(),
       updatedAt: nowMs(),
-      updatedAtServer: serverTimestamp(),
     });
 
     try {
-      const { sendPushNotification } = await import('../notifications');
       await sendPushNotification(
         lock.creatorUserId,
         'Lock Deleted',
@@ -378,7 +348,6 @@ export async function deleteLock(lockId: string, userId: string): Promise<void> 
     status: 'deleted',
     deletedAt: nowMs(),
     updatedAt: nowMs(),
-    updatedAtServer: serverTimestamp(),
   });
 }
 
@@ -427,7 +396,6 @@ export async function createUnlockRequest(lockId: string, message?: string): Pro
     requestedAt: nowMs(),
     message: message || null,
     creatorName,
-    createdAtServer: serverTimestamp(),
   };
 
   const ref = await addDoc(collection(db, UNLOCK_REQUESTS_COLLECTION), data);
@@ -435,17 +403,12 @@ export async function createUnlockRequest(lockId: string, message?: string): Pro
   await updateDoc(lockRef, {
     lastUnlockRequestAt: nowMs(),
     updatedAt: nowMs(),
-    updatedAtServer: serverTimestamp(),
   });
 
-  // IMPORTANT: sendLocalNotification fires on the CURRENT device (the creator's phone).
-  // The holder who needs to approve this request will NOT receive this notification
-  // unless they happen to have the app open. A Firebase Cloud Function is required to
-  // send a proper push notification to the holder's device. Until that is implemented,
-  // the holder must have the app open or check the Your Locks tab manually.
+  // Notify the holder on their device via Expo push relay
   try {
-    const { sendLocalNotification } = await import('../notifications');
-    await sendLocalNotification(
+    await sendPushNotification(
+      lock.holderUserId,
       `🔓 Unlock Request from ${creatorName}`,
       message || `Requesting ${lock.dailyMinutes} more minutes`,
       {
@@ -480,7 +443,6 @@ export async function approveUnlockRequest(requestId: string): Promise<void> {
     await updateDoc(requestRef, {
       status: 'approved',
       resolvedAt: nowMs(),
-      updatedAtServer: serverTimestamp(),
     });
   } catch (updateError) {
     throw new Error(`Failed to update request: ${updateError instanceof Error ? updateError.message : String(updateError)}`);
@@ -530,14 +492,13 @@ export async function approveUnlockRequest(requestId: string): Promise<void> {
         ]
       );
 
-      // Notify creator their request was approved
-      // Same cross-device limitation as createUnlockRequest: this fires locally.
+      // Notify creator their request was approved on their device via Expo push relay
       try {
         const holderDoc = await getDoc(doc(db, 'users', request.holderUserId));
         const holderName = formatUserName(holderDoc.exists() ? holderDoc.data() as { displayName?: string; email?: string } : null, 'Your lock holder');
 
-        const { sendLocalNotification } = await import('../notifications');
-        await sendLocalNotification(
+        await sendPushNotification(
+          request.creatorUserId,
           `✅ ${holderName} granted you more time!`,
           `You have ${lock.dailyMinutes} more minutes`,
           {
@@ -569,16 +530,15 @@ export async function denyUnlockRequest(requestId: string): Promise<void> {
   await updateDoc(requestRef, {
     status: 'denied',
     resolvedAt: nowMs(),
-    updatedAtServer: serverTimestamp(),
   });
 
-  // Same cross-device limitation: this fires locally.
+  // Notify creator their request was denied on their device via Expo push relay
   try {
     const holderDoc = await getDoc(doc(db, 'users', request.holderUserId));
     const holderName = formatUserName(holderDoc.exists() ? holderDoc.data() as { displayName?: string; email?: string } : null, 'Your lock holder');
 
-    const { sendLocalNotification } = await import('../notifications');
-    await sendLocalNotification(
+    await sendPushNotification(
+      request.creatorUserId,
       `❌ ${holderName} denied your request`,
       'Your unlock request was not approved',
       {
