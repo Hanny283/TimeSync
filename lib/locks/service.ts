@@ -1,4 +1,4 @@
-import { addDoc, collection, doc, getDoc, getDocs, onSnapshot, query, updateDoc, where } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, onSnapshot, query, setDoc, updateDoc, where } from 'firebase/firestore';
 import { Linking, Platform } from 'react-native';
 import {
   startMonitoring,
@@ -31,8 +31,7 @@ function nowMs(): number {
  * and safe for use as a security token in deep-link invite URLs.
  */
 function generateInviteId(): string {
-  const bytes = new Uint8Array(12);
-  crypto.getRandomValues(bytes);
+  const bytes = getRandomBytes(12);
   return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
 }
 

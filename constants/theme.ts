@@ -19,6 +19,8 @@ export const Colors = {
   warningBorder: '#92400E',
   errorBg: '#2C0A0A',
   errorBorder: '#7F1D1D',
+  purple: '#7C3AED',
+  purpleDark: '#5B21B6',
 };
 
 export const Radius = { sm: 6, md: 8, lg: 12, xl: 16 };

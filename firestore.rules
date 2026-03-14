@@ -35,6 +35,19 @@ service cloud.firestore {
                 && request.auth.uid == request.resource.data.holderUserId));
     }
 
+    // Block events: written by the restricted user (creator), read by same user
+    match /blockEvents/{eventId} {
+      allow create: if request.auth != null
+        && request.auth.uid == request.resource.data.userId;
+      allow read: if request.auth != null
+        && request.auth.uid == resource.data.userId;
+    }
+
+    // AI insights cache: only the owning user can read or write
+    match /aiInsights/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
     // Unlock requests: readable/writable by either party on the associated lock
     match /unlockRequests/{requestId} {
       allow read: if request.auth != null

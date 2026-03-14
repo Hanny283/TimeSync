@@ -5,6 +5,8 @@ import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View }
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../../components/ui/Button';
 import { Colors, Radius, Spacing } from '../../constants/theme';
+import { getOrGenerateInsights, refreshInsights } from '../../lib/ai/insights';
+import { AIInsights } from '../../lib/ai/types';
 import { useAuth } from '../../lib/firebase/AuthContext';
 import { listLocksForCreator, listLocksForHolder } from '../../lib/locks/service';
 import { Lock } from '../../lib/locks/types';
@@ -27,6 +29,9 @@ export default function HomeScreen() {
   const [sentLocks, setSentLocks] = useState<Lock[]>([]);
   const [heldLocks, setHeldLocks] = useState<Lock[]>([]);
   const [locksLoading, setLocksLoading] = useState(false);
+  const [insights, setInsights] = useState<AIInsights | null>(null);
+  const [insightsLoading, setInsightsLoading] = useState(false);
+  const [insightsError, setInsightsError] = useState(false);
 
   useEffect(() => {
     if (Platform.OS !== 'ios' || !user) return;
@@ -56,6 +61,7 @@ export default function HomeScreen() {
   useEffect(() => {
     if (!user) return;
     loadDashboard();
+    loadInsights();
   }, [user]);
 
   const loadDashboard = async () => {
@@ -72,6 +78,36 @@ export default function HomeScreen() {
       if (__DEV__) console.error('Error loading dashboard:', error);
     } finally {
       setLocksLoading(false);
+    }
+  };
+
+  const loadInsights = async () => {
+    if (!user) return;
+    setInsightsLoading(true);
+    setInsightsError(false);
+    try {
+      const result = await getOrGenerateInsights(user.uid);
+      setInsights(result);
+      if (!result) setInsightsError(true);
+    } catch {
+      setInsightsError(true);
+    } finally {
+      setInsightsLoading(false);
+    }
+  };
+
+  const handleRefreshInsights = async () => {
+    if (!user) return;
+    setInsightsLoading(true);
+    setInsightsError(false);
+    try {
+      const result = await refreshInsights(user.uid);
+      setInsights(result);
+      if (!result) setInsightsError(true);
+    } catch {
+      setInsightsError(true);
+    } finally {
+      setInsightsLoading(false);
     }
   };
 
@@ -189,6 +225,63 @@ export default function HomeScreen() {
             ))}
           </View>
         )}
+
+        {/* AI Insights */}
+        <View style={styles.insightsSection}>
+          <View style={styles.insightsSectionHeader}>
+            <Text style={styles.activeLockHeader}>AI Insights</Text>
+            <TouchableOpacity onPress={handleRefreshInsights} disabled={insightsLoading}>
+              <Ionicons
+                name="refresh"
+                size={16}
+                color={insightsLoading ? Colors.textMuted : Colors.textSecondary}
+              />
+            </TouchableOpacity>
+          </View>
+
+          {insightsLoading && (
+            <View style={styles.insightsCard}>
+              <Text style={styles.insightsLoadingText}>Analyzing your habits…</Text>
+            </View>
+          )}
+
+          {!insightsLoading && insightsError && (
+            <View style={styles.insightsCard}>
+              <Text style={styles.insightsErrorText}>Could not generate insights</Text>
+              <TouchableOpacity onPress={loadInsights} style={styles.retryButton}>
+                <Text style={styles.retryButtonText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {!insightsLoading && !insightsError && insights && (
+            <View style={styles.insightsCard}>
+              <Text style={styles.insightsSummary}>{insights.summary}</Text>
+
+              {insights.patterns.length > 0 && (
+                <View style={styles.insightsGroup}>
+                  {insights.patterns.map((p, i) => (
+                    <View key={i} style={styles.insightsRow}>
+                      <Ionicons name="analytics" size={14} color={Colors.purple} style={styles.insightsBullet} />
+                      <Text style={styles.insightsPattern}>{p}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {insights.tips.length > 0 && (
+                <View style={styles.insightsGroup}>
+                  {insights.tips.map((t, i) => (
+                    <View key={i} style={styles.insightsRow}>
+                      <Ionicons name="bulb" size={14} color={Colors.textMuted} style={styles.insightsBullet} />
+                      <Text style={styles.insightsTip}>{t}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          )}
+        </View>
 
         {/* Actions */}
         <View style={styles.actions}>
@@ -367,6 +460,76 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.textPrimary,
     fontWeight: '600',
+  },
+  insightsSection: {
+    gap: 8,
+  },
+  insightsSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  insightsCard: {
+    backgroundColor: Colors.card,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderTopWidth: 3,
+    borderTopColor: Colors.purple,
+    padding: Spacing.base,
+    gap: 12,
+  },
+  insightsSummary: {
+    fontSize: 14,
+    color: Colors.textPrimary,
+    lineHeight: 20,
+  },
+  insightsGroup: {
+    gap: 8,
+  },
+  insightsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  insightsBullet: {
+    marginTop: 2,
+  },
+  insightsPattern: {
+    flex: 1,
+    fontSize: 13,
+    color: Colors.textSecondary,
+    lineHeight: 18,
+  },
+  insightsTip: {
+    flex: 1,
+    fontSize: 13,
+    color: Colors.textMuted,
+    lineHeight: 18,
+  },
+  insightsLoadingText: {
+    fontSize: 14,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    paddingVertical: 8,
+  },
+  insightsErrorText: {
+    fontSize: 14,
+    color: Colors.textMuted,
+    textAlign: 'center',
+  },
+  retryButton: {
+    alignSelf: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  retryButtonText: {
+    fontSize: 13,
+    color: Colors.textSecondary,
   },
   actions: {
     gap: 12,
