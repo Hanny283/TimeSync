@@ -157,9 +157,9 @@ export async function startMonitoringForCreator(lockId: string): Promise<void> {
         {
           eventName,
           familyActivitySelection: selectionToken,
-          threshold: {
-            minute: lock.dailyMinutes,
-          },
+          threshold: lock.dailyMinutes === 0
+            ? { second: 1 }
+            : { minute: lock.dailyMinutes },
           includesPastActivity: false,
         },
       ]
@@ -500,9 +500,9 @@ export async function approveUnlockRequest(requestId: string): Promise<void> {
           {
             eventName: `${activityName}_threshold`,
             familyActivitySelection: selectionToken,
-            threshold: {
-              minute: lock.dailyMinutes,
-            },
+            threshold: lock.dailyMinutes === 0
+              ? { second: 1 }
+              : { minute: lock.dailyMinutes },
             includesPastActivity: false,
           },
         ]

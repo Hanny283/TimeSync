@@ -20,6 +20,7 @@ import { createLockDraft } from '../lib/locks/service';
 import { DeviceActivitySelectionView } from '../lib/screentime';
 
 const QUICK_PRESETS = [15, 30, 60, 120];
+const DEMO_PRESET = 0; // sentinel for 1-second demo
 
 const STEPS = ['1  Apps', '2  Limit', '3  Share'];
 
@@ -40,7 +41,7 @@ export default function SelectAppsScreen() {
       return;
     }
 
-    if (dailyMinutes < 1 || dailyMinutes > 1440) {
+    if (dailyMinutes !== DEMO_PRESET && (dailyMinutes < 1 || dailyMinutes > 1440)) {
       Alert.alert('Invalid Limit', 'Daily limit must be between 1 and 1440 minutes.');
       return;
     }
@@ -189,6 +190,12 @@ export default function SelectAppsScreen() {
 
         {/* Quick presets */}
         <View style={styles.presetsRow}>
+          <TouchableOpacity
+            style={[styles.presetChip, dailyMinutes === DEMO_PRESET && styles.presetChipActive]}
+            onPress={() => setDailyMinutes(DEMO_PRESET)}
+          >
+            <Text style={[styles.presetText, dailyMinutes === DEMO_PRESET && styles.presetTextActive]}>1 sec</Text>
+          </TouchableOpacity>
           {QUICK_PRESETS.map((min) => (
             <TouchableOpacity
               key={min}
