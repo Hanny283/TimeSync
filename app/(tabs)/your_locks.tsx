@@ -208,7 +208,7 @@ export default function YourLocksScreen() {
         onAccept={role === 'holder' ? () => handleAcceptLock(lock) : undefined}
         onCancel={role === 'creator' ? () => handleCancelLock(lock) : undefined}
         onRequestUnlock={
-          role === 'holder' ? () => router.push(`/request-unlock/${lock.id}`) : undefined
+          role === 'creator' ? () => router.push(`/request-unlock/${lock.id}`) : undefined
         }
         onDelete={canDelete ? () => handleDeleteLock(lock) : undefined}
       />

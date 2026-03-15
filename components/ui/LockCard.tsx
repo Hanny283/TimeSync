@@ -61,7 +61,7 @@ export default function LockCard({ lock, role, onCancel, onAccept, onRequestUnlo
         {role === 'holder' && lock.status === 'pending' && onAccept && (
           <Button title="Accept Lock" onPress={onAccept} size="sm" style={styles.actionBtn} />
         )}
-        {role === 'holder' && lock.status === 'active' && lock.isBlocked && onRequestUnlock && (
+        {role === 'creator' && lock.status === 'active' && lock.isBlocked && onRequestUnlock && (
           <Button
             title="Request Unlock"
             onPress={onRequestUnlock}
